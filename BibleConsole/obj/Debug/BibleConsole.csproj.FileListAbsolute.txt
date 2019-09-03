@@ -1,0 +1,7 @@
+C:\Users\Ethan Weber\source\repos\BibleConsole\BibleConsole\bin\Debug\BibleConsole.exe.config
+C:\Users\Ethan Weber\source\repos\BibleConsole\BibleConsole\bin\Debug\BibleConsole.exe
+C:\Users\Ethan Weber\source\repos\BibleConsole\BibleConsole\bin\Debug\BibleConsole.pdb
+C:\Users\Ethan Weber\source\repos\BibleConsole\BibleConsole\obj\Debug\BibleConsole.csprojAssemblyReference.cache
+C:\Users\Ethan Weber\source\repos\BibleConsole\BibleConsole\obj\Debug\BibleConsole.csproj.CoreCompileInputs.cache
+C:\Users\Ethan Weber\source\repos\BibleConsole\BibleConsole\obj\Debug\BibleConsole.exe
+C:\Users\Ethan Weber\source\repos\BibleConsole\BibleConsole\obj\Debug\BibleConsole.pdb
