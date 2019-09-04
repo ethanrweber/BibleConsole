@@ -1,22 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace BibleConsole
 {
-    class Book
-    {
-        public string Title { get; set; }
-        public Dictionary<string, string> ChapterVerseDict { get; set; }
-
-        public Book(string title, Dictionary<string, string> chapterVerseDict = null)
-        {
-            Title = title;
-            ChapterVerseDict = chapterVerseDict ?? new Dictionary<string, string>();
-        }
-    }
-
     class Program
     {
         private const string biblefile = "bible.txt";
@@ -25,9 +14,9 @@ namespace BibleConsole
             Console.WriteLine("loading...");
             var Bible = BuildBible();
 
-            const string bookPattern = "[a-zA-z]\\w+";
-            const string bookChapterPattern = "[a-zA-z]\\w+[ ][1-9]+";
-            const string bookChapterVersePattern = "[a-zA-Z]\\w+[ ][1-9]+[:][1-9]+";
+            string bookPattern = "[a-zA-z]\\w+";
+            string bookChapterPattern = bookPattern+"[ ][1-9]+";
+            string bookChapterVersePattern = bookChapterPattern+"[:][1-9]+";
 
             while (true)
             {
@@ -62,45 +51,42 @@ namespace BibleConsole
             string[] bibleArr = File.ReadAllLines(biblefile);
 
             // the whole bible
-            Dictionary<string, Book> Bible = new Dictionary<string, Book>();
+            Dictionary<string, Book> bible = new Dictionary<string, Book>();
 
             // each book of the bible
-            Book bibleBook = new Book("genesis");
+            Book book = new Book("genesis");
 
             // the current line - book chapter#:verse# verse as a string
-            foreach (string bibleLine in bibleArr)
+            foreach (string line in bibleArr)
             {
                 // split the current line into an array of strings
-                string[] bibleLineSplit = bibleLine.Split();
+                string[] lineSplit = line.Split();
 
                 // get the title of the book for the current line
-                string book = char.IsDigit(bibleLineSplit[0][0]) // if c/v in form "# book" instead of "book"
-                    ? (bibleLineSplit[0] + " " + bibleLineSplit[1]).ToLower()
-                    : bibleLineSplit[0].ToLower();
+                string bookTitle = char.IsDigit(lineSplit[0][0]) // if c/v in form "# book" instead of "book"
+                    ? (lineSplit[0] + " " + lineSplit[1]).ToLower()
+                    : lineSplit[0].ToLower();
 
                 // when a new book is encountered, add the current book to the bible and reset the bibleBook variable
-                if (bibleBook.Title != book)
+                if (book.Title != bookTitle)
                 {
-                    Bible[bibleBook.Title] = bibleBook;
-                    bibleBook = new Book(book);
+                    bible[book.Title] = book;
+                    book = new Book(bookTitle);
                 }
                 // add the current verse to the current book
-                bibleBook.ChapterVerseDict[bibleLineSplit[char.IsDigit(bibleLine[0]) ? 2 : 1]] = bibleLine;
+                book.ChapterVerseDict[lineSplit[char.IsDigit(line[0]) ? 2 : 1]] = line;
             }
 
-            return Bible;
+            return bible;
         }
 
         private static void PrintSection(Dictionary<string, Book> bible, string input)
         {
             string[] inputArr = input.Split(' ', ':');
-            string book;
-            string chapter = "";
-            string verse = "";
-            bool numberBook = false;
+            string book, chapter = "", verse = "";
+            // check for special cases of titles - "1 Samuel" for ex.
             if (char.IsDigit(inputArr[0][0]))
             {
-                numberBook = true;
                 book = (inputArr[0] + " " + inputArr[1]).ToLower();
                 if(inputArr.Length > 2)
                     chapter = inputArr[2];
@@ -134,15 +120,29 @@ namespace BibleConsole
             // print chapter
             else if (string.IsNullOrWhiteSpace(verse))
             {
+                // error check
+                int chapterNum = int.Parse(chapter);
+                var a = bible[book].ChapterVerseDict.Last();
+                var b = a.Value.Split(':')[0].Substring(book.Length).Trim();
+                int.TryParse(b, out int lastChapter);
+                if (chapterNum < 1 || chapterNum > lastChapter)
+                {
+                    Console.WriteLine($"seems like {book} doesn't contain chapter {chapterNum} - it only goes to chapter {chapterNum}");
+                    return;
+                }
                 // go through each line
                 foreach (KeyValuePair<string, string> kvp in bible[book].ChapterVerseDict)
                 {
                     // find first occurrence of number (chapter)
-                    int chapterNum = int.Parse(chapter);
                     string[] verseSplit = kvp.Value.Split(' ', ':');
                     foreach (string s in verseSplit)
                     {
                         int.TryParse(s, out int i);
+                        if (i < 1 || i > lastChapter)
+                        {
+                            Console.WriteLine("oh fuck");
+                            return;
+                        }
                         // if the chapter in this line is the requested chapter, print it
                         if (i == chapterNum)
                         {
@@ -155,10 +155,12 @@ namespace BibleConsole
             // print verse
             else
             {
-                Console.WriteLine(bible[book].ChapterVerseDict[chapter + ":" + verse]);
+                string chapVerse = chapter + ":" + verse;
+                Console.WriteLine(bible[book].ChapterVerseDict.ContainsKey(chapVerse)
+                    ? bible[book].ChapterVerseDict[chapVerse]
+                    : $"the book of {book} doesn't have chapter {chapter} verse {verse} :(");
             }
 
-            
             Console.WriteLine("\n");
         }
     }
